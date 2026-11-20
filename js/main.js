@@ -18,7 +18,7 @@ SB.MAIN = (function () {
       moving: false, moveT: 0, fx: 0, fy: 0, tx: 0, ty: 0, walkFrame: 0,
       time: 480, playtime: 0,
       hero: { name: 'Warden', look: {}, level: 1, xp: 0, hp: 38, ep: 13, gear: {}, hidden: {}, gold: 30 },
-      party: [], bag: {}, quests: {}, flags: {}, tracked: null,
+      party: [], bag: {}, quests: {}, flags: {}, tracked: null, codex: {},
       settings: { textSpeed: 1, music: true, sfx: true }
     };
   }
@@ -199,6 +199,7 @@ SB.MAIN = (function () {
       if (r.gear) r.gear.forEach(id => UI.toast('Received ' + D.GEAR[id].name + '!', D.RARITY[D.GEAR[id].rar].color));
       SB.G.mode = 'world'; UI.sync(); autosave();
       if (q.id === 'm5') epilogue();
+      if (q.id === 'm10') setTimeout(() => UI.showEnding(), 700);
     });
   }
 
@@ -243,7 +244,8 @@ SB.MAIN = (function () {
   }
 
   function onReach(map, x, y) { progressQuests('reach', { map, x, y }); }
-  function onBind(sp) { progressQuests('bind', { sp }); progressQuests('have', {}); }
+  function markCodex(sp, bound) { const c = SB.G.codex; if (bound) c[sp] = 'bound'; else if (!c[sp]) c[sp] = 'seen'; }
+  function onBind(sp) { markCodex(sp, true); progressQuests('bind', { sp }); progressQuests('have', {}); }
   function onCollect(item, n) { if (n > 0) progressQuests('collect', { item, n }); }
   function onBattleWin(B) {
     progressQuests('win', {});
@@ -312,7 +314,7 @@ SB.MAIN = (function () {
     if (e.type === 'herb') {
       const fk = 'herb_' + G.map + '_' + e.x + '_' + e.y;
       if (G.flags[fk]) { UI.toast('Nothing left to forage.'); return; }
-      G.flags[fk] = true; addItem('bitterroot', 1); SB.AUDIO.sfx('chest'); UI.toast('Foraged a Bitterroot.', '#6fce5a');
+      G.flags[fk] = true; const item = e.item || 'bitterroot'; addItem(item, 1); SB.AUDIO.sfx('chest'); UI.toast('Foraged ' + D.ITEMS[item].name + '.', '#6fce5a');
       return;
     }
     if (e.type === 'stump') {
@@ -342,6 +344,18 @@ SB.MAIN = (function () {
     if (e.type === 'bed') { rest(); return; }
     if (e.type === 'mirror') { openMirror(); return; }
     if (e.type === 'sign') { UI.say([e.text], 'Sign', () => { G.mode = 'world'; UI.sync(); }); return; }
+    if (e.type === 'beacon') {
+      if (ENG.isNight()) {
+        progressQuests('reach', { map: G.map, x: e.x, y: e.y });
+        ENG.burst(e.x * 16 + 8, e.y * 16 + 4, '#ffd94a', 24, 1.6);
+        UI.say(['You lay your hand on the beacon. It kindles with a warm, steady light.', 'Out in the ash, a dozen small lights answer — refugees, turning toward home. Duskhaven still stands.'], 'Beacon', () => { G.mode = 'world'; UI.sync(); });
+      } else UI.toast('The beacon only lights after dark.');
+      return;
+    }
+    if (e.type === 'idol') {
+      UI.say(['The idol of a dead sun. Stolen Cindren light flickers in its cracks like a trapped heartbeat.', 'It is cold. It is waiting. End this, Warden.'], 'Idol', () => { G.mode = 'world'; UI.sync(); });
+      return;
+    }
     if (e.type === 'boss') { startBoss(e); return; }
   }
   function tileAction(act, x, y) {
@@ -365,7 +379,7 @@ SB.MAIN = (function () {
   }
 
   /* ---------------- encounters ---------------- */
-  function levelBonus() { return (SB.G.flags.broodmother ? 2 : 0) + (SB.G.flags.sentinel ? 2 : 0) + (SB.G.flags.m4 ? 1 : 0); }
+  function levelBonus() { return (SB.G.flags.broodmother ? 1 : 0) + (SB.G.flags.sentinel ? 1 : 0) + (SB.G.flags.vael ? 2 : 0) + (SB.G.flags.kael ? 2 : 0); }
   function startWildEncounter() {
     const m = W.MAPS[SB.G.map];
     if (!m.encounters) return;
@@ -376,12 +390,14 @@ SB.MAIN = (function () {
     const n = Math.random() < 0.25 ? 2 : 1;
     const enemies = [];
     for (let i = 0; i < n; i++) { const e = pick(); const lvl = e[1] + ((Math.random() * (e[2] - e[1] + 1)) | 0) + levelBonus(); enemies.push(makeBeast(e[0], lvl)); }
-    const bg = SB.G.map === 'hollowmere' ? 'temple' : SB.G.map === 'cellar' ? 'cave' : 'wood';
+    enemies.forEach(e => markCodex(e.sp));
+    const bg = SB.G.map === 'hollowmere' ? 'temple' : SB.G.map === 'sunsgrave' ? 'grave' : SB.G.map === 'cellar' ? 'cave' : SB.G.map === 'scorchlands' ? 'scorch' : 'wood';
     SB.BATTLE.start({ enemies, wild: true, canFlee: true, bg });
   }
   function startBoss(e) {
     if (SB.G.flags[e.flag]) return;
-    const bg = SB.G.map === 'hollowmere' ? 'temple' : 'cave';
+    markCodex(e.sp);
+    const bg = SB.G.map === 'sunsgrave' ? 'grave' : SB.G.map === 'scorchlands' ? 'scorch' : SB.G.map === 'hollowmere' ? 'temple' : 'cave';
     UI.say(e.intro, D.SPECIES[e.sp].name, () => {
       SB.BATTLE.start({ enemies: [makeBeast(e.sp, e.level)], wild: false, canFlee: false, bossFlag: e.flag, bg });
     });
@@ -431,7 +447,7 @@ SB.MAIN = (function () {
       const raw = localStorage.getItem(SAVEKEY + 's' + slot);
       if (!raw) { UI.toast('No save in that slot.'); return; }
       const g = JSON.parse(raw);
-      g.mode = 'world'; g.moving = false;
+      g.mode = 'world'; g.moving = false; g.codex = g.codex || {};
       SB.G = g;
       uidC = Math.max(uidC, ...g.party.map(b => b.uid || 0)) + 1;
       SB.AUDIO.setMusicOn(g.settings.music); SB.AUDIO.setSfxOn(g.settings.sfx);

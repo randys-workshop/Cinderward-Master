@@ -43,6 +43,7 @@ SB.UI = (function () {
     else if (kind === 'dlg') { dialogueKey('confirm'); }
     else if (kind === 'choice') { dlg.choiceIdx = i; dialogueKey('confirm'); }
     else if (kind === 'gameover') { gameoverKey('confirm'); }
+    else if (kind === 'ending') { endingKey('confirm'); }
   }
 
   /* ---------------- visibility ---------------- */
@@ -54,6 +55,7 @@ SB.UI = (function () {
     $('menu').style.display = G.mode === 'menu' ? 'block' : 'none';
     $('shop').style.display = G.mode === 'shop' ? 'block' : 'none';
     $('gameover').style.display = G.mode === 'gameover' ? 'flex' : 'none';
+    $('ending').style.display = G.mode === 'ending' ? 'flex' : 'none';
     $('hud-battle').style.display = G.mode === 'battle' ? 'block' : 'none';
     $('controls-hint').style.display = (G.mode === 'world') ? 'block' : 'none';
   }
@@ -136,6 +138,7 @@ SB.UI = (function () {
       { label: 'Bag', act: 'bag', sub: 'items' },
       { label: 'Arts', act: 'arts', sub: 'aether arts' },
       { label: 'Quests', act: 'quests', sub: 'journal' },
+      { label: 'Codex', act: 'codex', sub: 'Cindren records' },
       { label: 'Save', act: 'save', sub: 'record progress' },
       { label: 'Options', act: 'options', sub: 'settings' },
       { label: 'Close', act: 'close', sub: 'return' }
@@ -162,6 +165,7 @@ SB.UI = (function () {
     if (U.panel === 'bag') return bagList();
     if (U.panel === 'arts') return SB.MAIN.heroMoves().map(id => ({ label: D.MOVES[id].name, move: id }));
     if (U.panel === 'quests') return questList();
+    if (U.panel === 'codex') return Object.keys(D.SPECIES).map(id => ({ label: SB.G.codex[id] ? D.SPECIES[id].name : '???', sp: id, status: SB.G.codex[id] || 'unknown' }));
     if (U.panel === 'save') return [1, 2, 3].map(s => ({ label: 'Slot ' + s, slot: s }));
     if (U.panel === 'options') return optionList();
     return [];
@@ -186,6 +190,7 @@ SB.UI = (function () {
       return;
     }
     if (U.panel === 'arts') { toast(D.MOVES[o.move].desc); return; }
+    if (U.panel === 'codex') { if (o.sp && SB.G.codex[o.sp]) toast(D.SPECIES[o.sp].desc); return; }
     if (U.panel === 'quests') { U.sub = 'quest'; U.subIdx = 0; U.questId = o.id; renderMenu(); return; }
     if (U.panel === 'save') { SB.MAIN.saveGame(o.slot); toast('Saved to Slot ' + o.slot + '.', '#7fffb0'); renderMenu(); return; }
     if (U.panel === 'options') { cycleOption(o); renderMenu(); return; }
@@ -331,7 +336,7 @@ SB.UI = (function () {
   }
 
   function panelTitle() {
-    return { main: 'MENU', beasts: 'CINDREN', gear: 'GEAR & APPEARANCE', bag: 'BAG', arts: 'AETHER ARTS', quests: 'QUEST JOURNAL', save: 'SAVE', options: 'OPTIONS' }[U.panel] || 'MENU';
+    return { main: 'MENU', beasts: 'CINDREN', gear: 'GEAR & APPEARANCE', bag: 'BAG', arts: 'AETHER ARTS', quests: 'QUEST JOURNAL', codex: 'CINDREN CODEX', save: 'SAVE', options: 'OPTIONS' }[U.panel] || 'MENU';
   }
   function footHint() {
     if (U.sub === 'pick') return 'Z equip · X back';
@@ -371,6 +376,24 @@ SB.UI = (function () {
       const o = currentList()[U.idx];
       if (o && o.move) { const m = D.MOVES[o.move]; return '<div class="stat-name" style="color:' + D.EL[m.el].color + '">' + esc(m.name) + '</div><div class="stat-line">' + (m.el !== 'none' ? D.EL[m.el].name : 'Physical') + ' · ' + m.kind + (m.cost ? ' · ' + m.cost + ' EP' : '') + '</div><div class="hint">' + esc(m.desc) + '</div>'; }
       return '';
+    }
+    if (U.panel === 'codex') {
+      const o = currentList()[U.idx];
+      const total = Object.keys(D.SPECIES).length;
+      const bound = Object.values(SB.G.codex).filter(v => v === 'bound').length;
+      const seen = Object.keys(SB.G.codex).length;
+      let h = '<div class="stat-name">Seen ' + seen + '/' + total + ' · Bound ' + bound + '</div>';
+      if (o && o.sp) {
+        const sp = D.SPECIES[o.sp], st = SB.G.codex[o.sp];
+        if (st) {
+          h += '<canvas id="codex-preview" width="60" height="60"></canvas>';
+          h += '<div class="stat-name" style="color:' + D.EL[sp.el].color + '">' + esc(sp.name) + (st === 'bound' ? ' ●' : ' ○') + '</div>';
+          h += '<div class="stat-line">' + D.EL[sp.el].name + (sp.boss ? ' · Boss' : '') + (sp.evo ? ' · Evolves Lv' + sp.evo.lvl : '') + '</div>';
+          h += '<div class="hint">' + esc(sp.desc) + '</div>';
+          setTimeout(() => { const c = $('codex-preview'); if (c) { const g = c.getContext('2d'); g.imageSmoothingEnabled = false; const img = SPR.drawBeast(o.sp, 0); const s = sp.boss ? 28 : 20; g.drawImage(img, 30 - s * 1.4, 60 - s * 2.6, s * 2.8, s * 2.8); } }, 0);
+        } else h += '<div class="hint center">???<br><br>Not yet encountered. Explore and battle to record this Cindren.</div>';
+      }
+      return h;
     }
     if (U.panel === 'quests') {
       const o = U.sub === 'quest' ? { id: U.questId } : currentList()[U.idx];
@@ -612,6 +635,24 @@ SB.UI = (function () {
   function showGameOver() { SB.G.mode = 'gameover'; gameoverReady = false; sync(); $('gameover').innerHTML = '<div class="go-title">The Flame Gutters...</div><div class="go-sub">Darkness takes the field. But embers remember.</div><div class="go-prompt" data-click="gameover">Press Z to wake at the inn</div>'; setTimeout(() => gameoverReady = true, 800); }
   function gameoverKey(n) { if (n === 'confirm' && gameoverReady) { SB.AUDIO.sfx('confirm'); SB.MAIN.respawn(); } }
 
+  /* ---------------- ending ---------------- */
+  function showEnding() {
+    SB.G.mode = 'ending'; SB.AUDIO.setMusic('victory'); sync();
+    const bound = Object.values(SB.G.codex).filter(v => v === 'bound').length;
+    const total = Object.keys(D.SPECIES).length;
+    const mins = Math.floor(SB.G.playtime / 60);
+    $('ending').innerHTML =
+      '<div class="end-logo">THE FLAME ENDURES</div>' +
+      '<div class="end-sub">Cinderward — The Dying Flame</div>' +
+      '<div class="end-text">The dead sun sleeps again. The stolen Cindren stream home, and the First Flame stands tall over a world that remembers blue.<br><br>You began as one Warden with one small spark. You end as the reason the dawn came back.</div>' +
+      '<div class="end-stats">' + esc(SB.G.hero.name) + ' · Lv ' + SB.G.hero.level + ' · Codex ' + bound + '/' + total + ' bound · ' + mins + ' min</div>' +
+      '<div class="end-credit">An original pixel RPG · all art, code &amp; music generated in-browser<br>Thank you for playing.</div>' +
+      '<div class="end-prompt" data-click="ending">Press Z to keep exploring</div>';
+  }
+  function endingKey(n) {
+    if (n === 'confirm') { SB.G.mode = 'world'; SB.AUDIO.setMusic(SB.WORLD.MAPS[SB.G.map].music); SB.AUDIO.sfx('confirm'); sync(); }
+  }
+
   /* ---------------- battle panel ---------------- */
   function refreshBattle() {
     const B = SB.BATTLE.get();
@@ -657,5 +698,5 @@ SB.UI = (function () {
     box.innerHTML = html;
   }
 
-  return { init, sync, toast, say, choose, dialogueKey, openMenu, closeMenu, menuKey, openCreator, openCreatorEdit, createKey, openShop, shopKey, showTitle, titleKey, showGameOver, gameoverKey, refreshBattle, renderMenu };
+  return { init, sync, toast, say, choose, dialogueKey, openMenu, closeMenu, menuKey, openCreator, openCreatorEdit, createKey, openShop, shopKey, showTitle, titleKey, showGameOver, gameoverKey, showEnding, endingKey, refreshBattle, renderMenu };
 })();

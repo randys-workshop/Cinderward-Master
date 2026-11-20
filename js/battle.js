@@ -40,7 +40,7 @@ SB.BATTLE = (function () {
     // player positions (bottom-left arc)
     const pp = [[70, 208], [150, 224], [222, 236], [292, 246]];
     B.party.forEach((c, i) => { c.rx = pp[i][0]; c.ry = pp[i][1]; });
-    const ep = B.enemies.length === 1 ? [[320, 150]] : B.enemies.length === 2 ? [[296, 132], [388, 168]] : [[262, 120], [340, 146], [410, 176]];
+    const ep = B.enemies.length === 1 ? [[318, 172]] : B.enemies.length === 2 ? [[296, 150], [392, 184]] : [[262, 138], [340, 162], [412, 190]];
     B.enemies.forEach((c, i) => { c.rx = ep[i][0]; c.ry = ep[i][1]; });
   }
 
@@ -530,6 +530,8 @@ SB.BATTLE = (function () {
       wood: ['#2a4a2a', '#1a2a18', '#3a5a3a'],
       cave: ['#2a2a35', '#1a1a22', '#3a3a45'],
       temple: ['#1a2a3a', '#0a1520', '#2a3a4a'],
+      scorch: ['#3a2a20', '#1a1210', '#5a4a38'],
+      grave: ['#241c30', '#0e0a16', '#3a3048'],
       town: ['#3a3a4a', '#2a2a35', '#4a4a5a']
     };
     const bg = bgs[B.bg] || bgs.wood;
@@ -556,7 +558,7 @@ SB.BATTLE = (function () {
     // fx
     for (const f of B.fx) drawFx(ctx, f);
     // enemy HP bars
-    for (const c of B.enemies) if (c.alive) drawHpBar(ctx, c.rx - 20, c.ry - (D.SPECIES[c.sp].boss ? 60 : 44), 40, c.hp / c.maxHp, c);
+    for (const c of B.enemies) if (c.alive) drawHpBar(ctx, c.rx - 20, c.ry - (D.SPECIES[c.sp].boss ? 104 : 52), 40, c.hp / c.maxHp, c);
   }
 
   function drawCombatant(ctx, c, foe) {
@@ -573,7 +575,7 @@ SB.BATTLE = (function () {
     } else {
       img = SPR.drawBeast(c.sp, (B.time * 2 | 0) % 2);
       const s = D.SPECIES[c.sp].boss ? 28 : 20;
-      const scale = D.SPECIES[c.sp].boss ? 3.0 : 2.2;
+      const scale = D.SPECIES[c.sp].boss ? 3.4 : 2.2;
       w = s * scale; h = s * scale;
     }
     const x = c.rx - w / 2 + shx, y = c.ry - h + bob;

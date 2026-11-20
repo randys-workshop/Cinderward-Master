@@ -32,7 +32,9 @@ SB.AUDIO = (function () {
     dungeon:{ tempo: 520, wave: 'sine', base: 147, notes: [0, -1, 3, -1, 0, -1, 5, 3, 0, -1, 3, -1, -2, -1, 0, -1], bass: [0, 0, -2, -2] },
     battle: { tempo: 180, wave: 'square', base: 220, notes: [0, 0, 7, 0, 3, 0, 7, 5, 0, 0, 7, 0, 10, 7, 5, 3], bass: [0, 0, 3, 3] },
     boss:   { tempo: 160, wave: 'sawtooth', base: 196, notes: [0, 3, 0, 6, 0, 3, 0, 7, 0, 3, 0, 6, 10, 7, 6, 3], bass: [0, 0, -2, -2] },
-    victory:{ tempo: 260, wave: 'triangle', base: 262, notes: [0, 4, 7, 12, 12, 7, 12, 16, 12, 7, 4, 7, 12, 12, 12, 12], bass: [0, 5, 0, 5] }
+    scorch: { tempo: 480, wave: 'sine', base: 196, notes: [0, 3, 7, 3, 0, -2, 3, -2, 0, 3, 7, 10, 7, 3, 0, -2], bass: [0, -2, -4, -2] },
+    grave:  { tempo: 620, wave: 'sine', base: 110, notes: [0, -1, 0, 3, 0, -1, 0, -4, 0, -1, 0, 3, 5, 3, 0, -1], bass: [0, 0, -4, -4] },
+    victory:  { tempo: 260, wave: 'triangle', base: 262, notes: [0, 4, 7, 12, 12, 7, 12, 16, 12, 7, 4, 7, 12, 12, 12, 12], bass: [0, 5, 0, 5] }
   };
   function freq(base, semi) { return base * Math.pow(2, semi / 12); }
 
@@ -146,6 +148,7 @@ SB.ENGINE = (function () {
     if (k === 'g' || k === 'G') return 'gear';
     if (k === 'i' || k === 'I') return 'bag';
     if (k === 'q' || k === 'Q') return 'quests';
+    if (k === 'k' || k === 'K') return 'codex';
     return null;
   }
 
@@ -171,6 +174,7 @@ SB.ENGINE = (function () {
     else if (G.mode === 'menu') SB.UI.menuKey(n);
     else if (G.mode === 'shop') SB.UI.shopKey(n);
     else if (G.mode === 'gameover') SB.UI.gameoverKey(n);
+    else if (G.mode === 'ending') SB.UI.endingKey(n);
     else if (G.mode === 'world') worldKey(n);
   }
   function onKeyUp(e) { const n = norm(e); if (n) keys[n] = false; }
@@ -185,6 +189,7 @@ SB.ENGINE = (function () {
     else if (n === 'beasts') SB.UI.openMenu('beasts');
     else if (n === 'bag') SB.UI.openMenu('bag');
     else if (n === 'quests') SB.UI.openMenu('quests');
+    else if (n === 'codex') SB.UI.openMenu('codex');
   }
 
   /* ---------- movement ---------- */

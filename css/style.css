@@ -155,6 +155,15 @@ body { display: flex; align-items: center; justify-content: center; font-family:
 .bt-ep { color: var(--ep); flex-shrink: 0; }
 .bt-r { color: var(--gold); flex-shrink: 0; }
 
+/* ---------- ending ---------- */
+#ending { position: absolute; inset: 0; z-index: 60; display: flex; flex-direction: column; align-items: center; justify-content: center; background: radial-gradient(circle at 50% 38%, #3a2020, #0e0a16 75%); text-align: center; padding: 20px; }
+.end-logo { font-size: 18px; color: var(--gold); letter-spacing: 2px; text-shadow: 0 0 16px rgba(255, 154, 90, 0.7), 2px 2px 0 #5a2a14; animation: glow 3s ease-in-out infinite; }
+.end-sub { font-size: 8px; color: var(--ember); margin-top: 8px; letter-spacing: 1px; }
+.end-text { font-size: 7px; color: var(--ink); line-height: 1.9; max-width: 340px; margin-top: 16px; }
+.end-stats { font-size: 7px; color: var(--good); margin-top: 14px; }
+.end-credit { font-size: 6px; color: var(--muted); margin-top: 12px; line-height: 1.7; }
+.end-prompt { font-size: 8px; color: var(--gold); margin-top: 18px; animation: blink 1.2s steps(1) infinite; cursor: pointer; }
+
 /* scrollbars */
 ::-webkit-scrollbar { width: 5px; }
 ::-webkit-scrollbar-track { background: #0a0714; }
